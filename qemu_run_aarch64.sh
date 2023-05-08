@@ -1,0 +1,1 @@
+qemu-system-aarch64 -nographic -serial mon:stdio -m 1024 -smp 2 -cpu cortex-a57  -M virt -drive file=pflash0.img,if=pflash,format=raw,readonly=on -drive file=pflash1.img,if=pflash,format=raw -drive file=ultimate_hello_aarch64.bin,format=raw  -net none
