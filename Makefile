@@ -18,16 +18,17 @@ LDFLAGS=-target $(PLATFORM)-unknown-windows \
         -fuse-ld=lld-link
 IMG_NAME=ultimate_hello_$(PLATFORM).img
 BIN_NAME=ultimate_hello_$(PLATFORM).bin
+SRC_DIR=src
+cc=clang
+SRC_FILES=$(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES=$(patsubst $(SRC_DIR)/%.c,$(SRC_DIR)/%.o,$(SRC_FILES))
 
 all: ${BIN_NAME}
 
-hello.o: hello.c
-	clang $(CFLAGS) -c -o $@ $^
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	clang $(CFLAGS) -c -o $@ $<
 
-data.o: gnu-efi-data.c
-	clang $(CFLAGS) -c -o $@ $^
-
-$(EFI_FILE): hello.o data.o
+$(EFI_FILE): $(OBJ_FILES)
 	clang $(LDFLAGS) -o $@ $^
 
 ${IMG_NAME}: $(EFI_FILE)
@@ -41,7 +42,7 @@ ${BIN_NAME}: ${IMG_NAME}
 	mkgpt -o $@ --image-size 4096 --part $^ --type system
 
 clean:
-	rm -f hello.o data.o $(EFI_FILE) ${IMG_NAME} ${BIN_NAME}
+	rm -f *.o $(EFI_FILE) ${IMG_NAME} ${BIN_NAME}
 
 .PHONY: all clean
 
