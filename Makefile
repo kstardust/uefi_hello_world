@@ -42,7 +42,7 @@ ${BIN_NAME}: ${IMG_NAME}
 	mkgpt -o $@ --image-size 4096 --part $^ --type system
 
 clean:
-	rm -f *.o $(EFI_FILE) ${IMG_NAME} ${BIN_NAME}
+	rm -f $(OBJ_FILES) $(EFI_FILE) ${IMG_NAME} ${BIN_NAME}
 
 .PHONY: all clean
 
