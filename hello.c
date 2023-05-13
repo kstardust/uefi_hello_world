@@ -1,6 +1,35 @@
 #include <efi.h>
 #include <efilib.h>
 
+/*
+ see: gnu-efi/lib/init.c
+ * Calls to memset/memcpy may be emitted implicitly by GCC or MSVC
+ * even when -ffreestanding or /NODEFAULTLIB are in effect.
+ */
+
+void *memset(void *s, int c, __SIZE_TYPE__ n)
+{
+    unsigned char *p = s;
+
+    while (n--)
+        *p++ = c;
+
+    return s;
+}
+
+void *memcpy(void *dest, const void *src, __SIZE_TYPE__ n)
+{
+    const unsigned char *q = src;
+    unsigned char *p = dest;
+
+    while (n--)
+        *p++ = *q++;
+
+    return dest;
+}
+
+  
+
 CHAR16*
 itos(uint64_t n)
 {
@@ -26,14 +55,15 @@ check_gop()
     status = BS->LocateProtocol(&gop_guid, NULL, (void**)&gop);
     
     if (EFI_ERROR(status)) {
-        ST->ConOut->OutputString(ST->ConOut, L"Unable to locate protocol");
+        ST->ConOut->OutputString(ST->ConOut, L"Unable to locate protocol");        
+        ST->ConOut->OutputString(ST->ConOut, itos(status & ~EFI_ERROR_MASK));
         return status;
     }    
  
     status = gop->QueryMode(gop, gop->Mode == NULL ? 0 : gop->Mode->Mode, &size_of_info, &info);
     // this is needed to get the current video mode
-    if (status == EFI_NOT_STARTED)
-        status = gop->SetMode(gop, 0);
+    if (status == EFI_NOT_STARTED) 
+        status = gop->SetMode(gop, 0);    
 
     if (EFI_ERROR(status)) {
         ST->ConOut->OutputString(ST->ConOut, L"Unable to get native mode");
@@ -54,10 +84,61 @@ check_gop()
     ST->ConOut->OutputString(ST->ConOut, itos(gop->Mode->FrameBufferSize));
     ST->ConOut->OutputString(ST->ConOut, L"\r\n");
 
+    ST->ConOut->OutputString(ST->ConOut, L"FrameBufferBase: ");
+    ST->ConOut->OutputString(ST->ConOut, itos(gop->Mode->FrameBufferBase));
+    ST->ConOut->OutputString(ST->ConOut, L"\r\n");
+
     ST->ConOut->OutputString(ST->ConOut, L"PixelsPerScanLine: ");
     ST->ConOut->OutputString(ST->ConOut, itos(info->PixelsPerScanLine));
     ST->ConOut->OutputString(ST->ConOut, L"\r\n");        
+
     
+    EFI_GRAPHICS_OUTPUT_BLT_PIXEL pixels[30 * 3] = {
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+        {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, {00, 0xff, 00, 0xff}, 
+
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+        {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, {0xff, 0x00, 00, 0xff}, 
+
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+        
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+        {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, {00, 00, 0xff, 0xff}, 
+                
+    };
+
+    status = gop->Blt(gop, 
+            pixels,
+            EfiBltBufferToVideo,
+            0,
+            0,
+            0,
+            0,
+            10,
+            9,
+            sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL) * 10);
+    
+    if (EFI_ERROR(status)) {
+        ST->ConOut->OutputString(ST->ConOut, L"Unable to blt");
+        return status;
+    }
+
     return EFI_SUCCESS;
 }
 
