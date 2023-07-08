@@ -4,6 +4,7 @@ ifeq ($(PLATFORM), aarch64)
 else
     PLATFORM=x86_64
     EFI_FILE=BOOTX64.EFI
+    ASM_FILE=$(SRC_DIR)/myfunction_aarch64.s
 endif
 
 CFLAGS=-target $(PLATFORM)-unknown-windows \
@@ -19,17 +20,22 @@ LDFLAGS=-target $(PLATFORM)-unknown-windows \
 IMG_NAME=ultimate_hello_$(PLATFORM).img
 BIN_NAME=ultimate_hello_$(PLATFORM).bin
 SRC_DIR=src
-cc=clang
+CC=clang
+AS=clang
+ASM_FILES=$(wildcard $(SRC_DIR)/$(PLATFORM)/*.s)
 SRC_FILES=$(wildcard $(SRC_DIR)/*.c)
-OBJ_FILES=$(patsubst $(SRC_DIR)/%.c,$(SRC_DIR)/%.o,$(SRC_FILES))
+OBJ_FILES=$(patsubst $(SRC_DIR)/%.c,$(SRC_DIR)/%.o,$(SRC_FILES)) $(patsubst $(SRC_DIR)/%.s,$(SRC_DIR)/%.o,$(ASM_FILES))
 
 all: ${BIN_NAME}
 
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
-	clang $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.s
+	$(AS) $(CFLAGS) -c -o $@ $<
 
 $(EFI_FILE): $(OBJ_FILES)
-	clang $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^
 
 ${IMG_NAME}: $(EFI_FILE)
 	dd if=/dev/zero of=$@ bs=1k count=1440
