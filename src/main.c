@@ -3,14 +3,16 @@
 #include "common.h"
 #include "string_utils.h"
 
-void putchar(int c)
+void
+putchar(int c)
 {
     static CHAR16 buf[2];
     buf[0] = c;
     ST->ConOut->OutputString(ST->ConOut, buf); 
 }
 
-void* malloc(size_t size)
+void *
+malloc(size_t size)
 {
     return pool_malloc(size);
 }

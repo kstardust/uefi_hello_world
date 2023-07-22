@@ -29,8 +29,8 @@ tolower(int c)
 long
 strlen(const char *s)
 {
-	const char *p = s;
-	while (*p)
-		p++;
-	return p - s;
+    const char *p = s;
+    while (*p)
+        p++;
+    return p - s;
 }
