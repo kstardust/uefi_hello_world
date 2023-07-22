@@ -1,4 +1,5 @@
 #include "common.h"
+#include "string_utils.h"
 
 /* see: gnu-efi/lib/init.c
  * Calls to memset/memcpy may be emitted implicitly by GCC or MSVC
@@ -27,17 +28,26 @@ memcpy(void *dest, const void *src, __SIZE_TYPE__ n)
     return dest;
 }
 
-CHAR16*
-itos(uint64_t n)
-{
-    static CHAR16 buf[21];
-    CHAR16 *p = buf + 20;
-    *p = '\0';
-    do {
-        *--p = (n % 10) + '0';
-        n /= 10;
-    } while (n != 0);
-    return p;
+CHAR16* 
+cstrtowstr(char *str, CHAR16 *wstr)
+{    
+    UINTN len = strlen(str);
+    UINTN i;
+
+    wstr = pool_malloc(sizeof(CHAR16) * (len + 1));
+
+    if (wstr == NULL) {
+        print(L"Unable to allocate memory for wstr\r\n");
+        return NULL;
+    }
+
+    for (i = 0; i < len; i++) {
+        wstr[i] = str[i];
+    }
+
+    wstr[i] = '\0';
+
+    return wstr;
 }
 
 void 
@@ -77,3 +87,4 @@ pool_free(void *p)
         print(L"error freeing pool memory\r\n");
     }
 }
+ 
